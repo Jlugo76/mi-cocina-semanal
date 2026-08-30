@@ -13,6 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://mi-cocina-jhonathan.jlugo21776.chatgpt.site'),
   title: 'Mi cocina | Plan semanal',
   description: 'Tu menú semanal, recetas guiadas y horario de entrenamiento.',
   openGraph: {
