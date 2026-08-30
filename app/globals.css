@@ -187,6 +187,7 @@ p {
 .training-view,
 .week-view,
 .recipes-view,
+.shopping-view,
 .guide-view {
   width: 100%;
   max-width: 760px;
@@ -832,6 +833,197 @@ p {
   font-size: 12px;
 }
 
+.shopping-summary {
+  margin-bottom: 14px;
+  padding: 14px;
+  border: 1px solid #b8d8ca;
+  border-left: 4px solid var(--green);
+  border-radius: 8px;
+  background: var(--green-soft);
+}
+
+.shopping-summary > div:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.shopping-summary > div:first-child strong {
+  color: var(--green-dark);
+  font-size: 17px;
+}
+
+.shopping-progress {
+  height: 8px;
+  margin: 9px 0 12px;
+  overflow: hidden;
+  border-radius: 4px;
+  background: var(--surface);
+}
+
+.shopping-progress span {
+  display: block;
+  height: 100%;
+  background: var(--green);
+  transition: width 180ms ease;
+}
+
+.shopping-summary > button {
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 10px;
+  border: 1px solid #91b9a7;
+  border-radius: 7px;
+  background: var(--surface);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.shopping-add {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 98px 44px;
+  align-items: end;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.shopping-add label {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.shopping-add label > span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.shopping-add input,
+.shopping-list input[type='text'],
+.shopping-amount input {
+  min-width: 0;
+  height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface);
+}
+
+.shopping-add input {
+  width: 100%;
+  padding: 8px 10px;
+}
+
+.shopping-add > button {
+  display: flex;
+  width: 44px;
+  height: 42px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  color: #fff;
+  background: var(--tomato);
+}
+
+.shopping-list {
+  display: grid;
+  gap: 7px;
+}
+
+.shopping-list article {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr) 104px 38px;
+  align-items: center;
+  gap: 8px;
+  min-height: 58px;
+  padding: 7px 8px 7px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.shopping-list article.is-checked {
+  border-color: #b8d8ca;
+  background: #eef8f3;
+}
+
+.shopping-list input[type='checkbox'] {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--green);
+}
+
+.shopping-list input[type='text'] {
+  width: 100%;
+  padding: 7px 9px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.shopping-list article.is-checked .shopping-name {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.shopping-amount {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 25px;
+  align-items: center;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface);
+}
+
+.shopping-amount input {
+  width: 100%;
+  padding: 6px 3px 6px 8px;
+  border: 0;
+  border-radius: 0;
+  text-align: right;
+}
+
+.shopping-amount span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.shopping-delete {
+  display: flex;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  color: var(--tomato);
+  background: var(--tomato-soft);
+}
+
+.shopping-empty {
+  margin: 0;
+  padding: 22px 14px;
+  border: 1px dashed #9bbcaf;
+  border-radius: 8px;
+  color: var(--muted);
+  background: var(--surface);
+  font-size: 14px;
+  line-height: 1.45;
+  text-align: center;
+}
+
 .guide-view {
   display: grid;
   gap: 10px;
@@ -873,7 +1065,7 @@ p {
   z-index: 10;
   bottom: 0;
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   min-height: 66px;
   border-top: 1px solid var(--line);
   background: rgb(255 255 255 / 96%);
@@ -942,6 +1134,20 @@ p {
   .recipe-meta {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .shopping-add {
+    grid-template-columns: minmax(0, 1fr) 78px 42px;
+  }
+
+  .shopping-list article {
+    grid-template-columns: 24px minmax(0, 1fr) 82px 34px;
+    gap: 6px;
+    padding-left: 8px;
+  }
+
+  .shopping-delete {
+    width: 32px;
   }
 
   .servings-control {

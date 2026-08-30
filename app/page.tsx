@@ -17,20 +17,56 @@ import {
   Minus,
   Moon,
   Plus,
+  RotateCcw,
   Scale,
+  ShoppingCart,
   Sun,
   Timer,
+  Trash2,
   Utensils,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { allMeals, Meal, MealType, menu } from './data';
 
-type View = 'day' | 'week' | 'training' | 'recipes' | 'guide';
+type View = 'day' | 'week' | 'training' | 'recipes' | 'shopping' | 'guide';
 type CompletionMap = Record<string, number>;
+type ShoppingItem = {
+  id: string;
+  name: string;
+  grams: number;
+  checked: boolean;
+  custom?: boolean;
+};
 
 const STORAGE_KEY = 'mi-cocina-state-v1';
 const defaultTraining = Array.from({ length: 7 }, () => '19:30');
 const dayNames = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+
+function createWeeklyShoppingList(): ShoppingItem[] {
+  const totals = new Map<string, { name: string; grams: number }>();
+
+  allMeals.forEach((meal) => {
+    meal.ingredients.forEach((ingredient) => {
+      const key = ingredient.name.trim().toLocaleLowerCase('es-ES');
+      const current = totals.get(key);
+      totals.set(key, {
+        name: current?.name ?? ingredient.name,
+        grams: (current?.grams ?? 0) + ingredient.grams,
+      });
+    });
+  });
+
+  return Array.from(totals.entries())
+    .map(([key, item]) => ({
+      id: `plan-${key.replace(/[^a-z0-9]+/g, '-')}`,
+      name: item.name,
+      grams: item.grams,
+      checked: false,
+    }))
+    .sort((left, right) => left.name.localeCompare(right.name, 'es'));
+}
+
+const defaultShoppingItems = createWeeklyShoppingList();
 
 function toMinutes(value: string) {
   const [hours, minutes] = value.split(':').map(Number);
@@ -86,15 +122,19 @@ export default function Home() {
   const [activeMeal, setActiveMeal] = useState<Meal | null>(null);
   const [servings, setServings] = useState(1);
   const [finishedSteps, setFinishedSteps] = useState<number[]>([]);
+  const [shoppingItems, setShoppingItems] = useState<ShoppingItem[]>(defaultShoppingItems);
+  const [newShoppingName, setNewShoppingName] = useState('');
+  const [newShoppingGrams, setNewShoppingGrams] = useState('');
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
     try {
       const saved = window.localStorage.getItem(STORAGE_KEY);
       if (saved) {
-        const parsed = JSON.parse(saved) as { trainingTimes?: string[]; completed?: CompletionMap };
+        const parsed = JSON.parse(saved) as { trainingTimes?: string[]; completed?: CompletionMap; shoppingItems?: ShoppingItem[] };
         if (Array.isArray(parsed.trainingTimes) && parsed.trainingTimes.length === 7) setTrainingTimes(parsed.trainingTimes);
         if (parsed.completed) setCompleted(parsed.completed);
+        if (Array.isArray(parsed.shoppingItems)) setShoppingItems(parsed.shoppingItems);
       }
     } catch {
       // Local preferences are optional.
@@ -105,8 +145,8 @@ export default function Home() {
 
   useEffect(() => {
     if (!ready) return;
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ trainingTimes, completed }));
-  }, [completed, ready, trainingTimes]);
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ trainingTimes, completed, shoppingItems }));
+  }, [completed, ready, shoppingItems, trainingTimes]);
 
   const selectedMenu = menu[selectedDay];
   const selectedDate = weekDates[selectedDay];
@@ -177,10 +217,35 @@ export default function Home() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
+  function updateShoppingItem(id: string, changes: Partial<ShoppingItem>) {
+    setShoppingItems((current) => current.map((item) => item.id === id ? { ...item, ...changes } : item));
+  }
+
+  function addShoppingItem(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const name = newShoppingName.trim();
+    if (!name) return;
+
+    setShoppingItems((current) => [
+      ...current,
+      {
+        id: `custom-${Date.now()}`,
+        name,
+        grams: Math.max(0, Number(newShoppingGrams) || 0),
+        checked: false,
+        custom: true,
+      },
+    ]);
+    setNewShoppingName('');
+    setNewShoppingGrams('');
+  }
+
   const weekLabel = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short' });
   const totalRecipeWeight = activeMeal
     ? activeMeal.ingredients.reduce((sum, item) => sum + item.grams, 0) * servings
     : 0;
+  const checkedShoppingItems = shoppingItems.filter((item) => item.checked).length;
+  const shoppingProgress = shoppingItems.length ? Math.round((checkedShoppingItems / shoppingItems.length) * 100) : 0;
 
   return (
     <main className="app-shell">
@@ -380,6 +445,92 @@ export default function Home() {
                 ))}
               </div>
             </section>
+          ) : view === 'shopping' ? (
+            <section className="shopping-view">
+              <div className="section-heading">
+                <span>Ingredientes de los 7 días</span>
+                <h1>Lista de compra</h1>
+              </div>
+
+              <div className="shopping-summary">
+                <div>
+                  <span>{checkedShoppingItems} de {shoppingItems.length} comprados</span>
+                  <strong>{shoppingProgress}%</strong>
+                </div>
+                <div className="shopping-progress" aria-label={`${shoppingProgress}% de la compra completada`}>
+                  <span style={{ width: `${shoppingProgress}%` }} />
+                </div>
+                <button type="button" onClick={() => setShoppingItems(createWeeklyShoppingList())}>
+                  <RotateCcw size={17} /> Restaurar lista
+                </button>
+              </div>
+
+              <form className="shopping-add" onSubmit={addShoppingItem}>
+                <label>
+                  <span>Producto nuevo</span>
+                  <input
+                    type="text"
+                    value={newShoppingName}
+                    onChange={(event) => setNewShoppingName(event.target.value)}
+                    placeholder="Ej. Limones"
+                  />
+                </label>
+                <label>
+                  <span>Gramos</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    inputMode="numeric"
+                    value={newShoppingGrams}
+                    onChange={(event) => setNewShoppingGrams(event.target.value)}
+                    placeholder="0"
+                  />
+                </label>
+                <button type="submit" aria-label="Añadir producto" disabled={!newShoppingName.trim()}><Plus size={20} /></button>
+              </form>
+
+              <div className="shopping-list">
+                {shoppingItems.map((item) => (
+                  <article className={item.checked ? 'is-checked' : ''} key={item.id}>
+                    <input
+                      type="checkbox"
+                      checked={item.checked}
+                      aria-label={`Marcar ${item.name} como comprado`}
+                      onChange={(event) => updateShoppingItem(item.id, { checked: event.target.checked })}
+                    />
+                    <input
+                      className="shopping-name"
+                      type="text"
+                      value={item.name}
+                      aria-label="Nombre del producto"
+                      onChange={(event) => updateShoppingItem(item.id, { name: event.target.value })}
+                    />
+                    <label className="shopping-amount">
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        inputMode="numeric"
+                        value={item.grams}
+                        aria-label={`Gramos de ${item.name}`}
+                        onChange={(event) => updateShoppingItem(item.id, { grams: Math.max(0, Number(event.target.value) || 0) })}
+                      />
+                      <span>g</span>
+                    </label>
+                    <button
+                      className="shopping-delete"
+                      type="button"
+                      aria-label={`Eliminar ${item.name}`}
+                      onClick={() => setShoppingItems((current) => current.filter((entry) => entry.id !== item.id))}
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </article>
+                ))}
+                {!shoppingItems.length ? <p className="shopping-empty">La lista está vacía. Añade un producto arriba o restaura el menú semanal.</p> : null}
+              </div>
+            </section>
           ) : (
             <section className="guide-view">
               <div className="section-heading">
@@ -401,6 +552,7 @@ export default function Home() {
           <NavButton label="Semana" icon={<CalendarDays size={20} />} active={view === 'week'} onClick={() => changeView('week')} />
           <NavButton label="Entreno" icon={<Dumbbell size={20} />} active={view === 'training'} onClick={() => changeView('training')} />
           <NavButton label="Recetas" icon={<BookOpen size={20} />} active={view === 'recipes'} onClick={() => changeView('recipes')} />
+          <NavButton label="Compra" icon={<ShoppingCart size={20} />} active={view === 'shopping'} onClick={() => changeView('shopping')} />
           <NavButton label="Guía" icon={<CircleHelp size={20} />} active={view === 'guide'} onClick={() => changeView('guide')} />
         </nav>
       </div>
