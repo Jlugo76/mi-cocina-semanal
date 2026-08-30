@@ -103,6 +103,29 @@ function MealGlyph({ type }: { type: MealType }) {
   return <Moon {...props} />;
 }
 
+function mealImage(meal: Meal) {
+  const title = meal.title.toLocaleLowerCase('es-ES');
+
+  if (/pasta|macarr|espagueti/.test(title)) return 'meals/pasta.jpg';
+  if (/arroz|quinoa|cuscús|cuscus/.test(title)) return 'meals/rice.jpg';
+  if (/salmón|salmon|merluza|bacalao|atún|atun|pescado/.test(title)) return 'meals/fish.jpg';
+  if (/hamburguesa/.test(title)) return 'meals/burger.jpg';
+  if (/pollo|pavo|carne|ternera/.test(title)) return 'meals/chicken.jpg';
+  if (/bocadillo|sándwich|sandwich|tostada|pan /.test(title)) return 'meals/sandwich.jpg';
+  if (/batido|leche/.test(title)) return 'meals/smoothie.jpg';
+  if (/huevo|tortilla/.test(title)) return 'meals/eggs.jpg';
+  if (/ensalada|verdura/.test(title)) return 'meals/salad.jpg';
+  if (/yogur|queso fresco/.test(title)) return 'meals/yogurt.jpg';
+  if (/fruta|kiwi|plátano|platano|manzana|mandarina|fresa|uva/.test(title)) return 'meals/fruit.jpg';
+
+  if (meal.type === 'breakfast') return 'meals/breakfast.jpg';
+  if (meal.type === 'snack') return 'meals/fruit.jpg';
+  if (meal.type === 'afternoon') return 'meals/smoothie.jpg';
+  if (meal.type === 'dinner') return 'meals/fish.jpg';
+  if (meal.type === 'late') return 'meals/yogurt.jpg';
+  return 'meals/rice.jpg';
+}
+
 export default function Home() {
   const today = useMemo(() => new Date(), []);
   const todayIndex = (today.getDay() + 6) % 7;
@@ -249,7 +272,7 @@ export default function Home() {
 
   return (
     <main className="app-shell">
-      <div className={`app-frame ${activeMeal ? 'recipe-active' : ''}`}>
+      <div className={`app-frame ${activeMeal ? `recipe-active recipe-${activeMeal.type}` : ''}`}>
         <header className="topbar">
           <div className="brand-mark" aria-hidden="true"><CookingPot size={22} /></div>
           <div className="brand-copy">
@@ -276,7 +299,7 @@ export default function Home() {
 
         <section className="main-surface">
           {activeMeal ? (
-            <section className="recipe-view" aria-label={`Receta de ${activeMeal.title}`}>
+            <section className={`recipe-view ${activeMeal.type}`} aria-label={`Receta de ${activeMeal.title}`}>
               <header className="recipe-header">
                 <button className="icon-button" type="button" aria-label="Volver" onClick={() => setActiveMeal(null)}>
                   <ArrowLeft size={20} />
@@ -287,9 +310,13 @@ export default function Home() {
                 </div>
               </header>
 
-              <div className={`recipe-hero ${activeMeal.type}`}>
-                <MealGlyph type={activeMeal.type} />
-                <span>{activeMeal.title}</span>
+              <div className="recipe-hero">
+                <img src={mealImage(activeMeal)} alt={`Imagen de referencia de ${activeMeal.title}`} />
+                <div className="recipe-hero-copy">
+                  <span className="reference-tag">Imagen de referencia</span>
+                  <span className="recipe-hero-icon"><MealGlyph type={activeMeal.type} /></span>
+                  <strong>{activeMeal.title}</strong>
+                </div>
               </div>
 
               <div className="recipe-meta">
@@ -373,7 +400,10 @@ export default function Home() {
                         {done ? <Check size={20} /> : null}
                       </button>
                       <button className="meal-open" type="button" aria-label={`Abrir receta de ${meal.title}`} onClick={() => openMeal(meal)}>
-                        <span className={`meal-symbol ${meal.type}`}><MealGlyph type={meal.type} /></span>
+                        <span className={`meal-photo ${meal.type}`}>
+                          <img src={mealImage(meal)} alt="" loading="lazy" />
+                          <span><MealGlyph type={meal.type} /></span>
+                        </span>
                         <span className="meal-copy">
                           <span><strong>{meal.label}</strong> {done ? `Hecho ${toTime(meal.actual as number)}` : `aprox. ${toTime(meal.suggested)}`}</span>
                           <span>{meal.title}</span>
@@ -436,7 +466,10 @@ export default function Home() {
                     <h2>Día {dayMenu.day}</h2>
                     {dayMenu.meals.map((meal) => (
                       <button type="button" key={meal.id} onClick={() => openMeal(meal)}>
-                        <span className={`meal-symbol ${meal.type}`}><MealGlyph type={meal.type} /></span>
+                        <span className={`meal-photo ${meal.type}`}>
+                          <img src={mealImage(meal)} alt="" loading="lazy" />
+                          <span><MealGlyph type={meal.type} /></span>
+                        </span>
                         <span><strong>{meal.title}</strong><span>{meal.label} · {meal.ingredients.length} ingredientes</span></span>
                         <ChevronRight size={18} />
                       </button>
