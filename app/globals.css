@@ -76,7 +76,7 @@ p {
 
 .topbar {
   display: grid;
-  grid-template-columns: 42px minmax(0, 1fr) 40px;
+  grid-template-columns: 42px minmax(0, 1fr);
   align-items: center;
   gap: 10px;
   min-height: 72px;
@@ -561,6 +561,197 @@ p {
   padding: 0 6px;
   font-size: 13px;
   text-align: center;
+}
+
+.recipe-switch {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  margin: 14px 0;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #e8eeeb;
+}
+
+.recipe-switch button {
+  display: inline-flex;
+  min-width: 0;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.recipe-switch button[aria-pressed='true'] {
+  color: #fff;
+  background: var(--green);
+  box-shadow: 0 2px 8px rgb(20 43 36 / 18%);
+}
+
+.recommendation-proof {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 16px;
+  padding: 13px;
+  border: 1px solid #e6c459;
+  border-left: 4px solid var(--saffron);
+  border-radius: 8px;
+  background: var(--saffron-soft);
+}
+
+.recommendation-proof > div {
+  min-width: 0;
+}
+
+.recommendation-proof span {
+  color: #6b5210;
+  font-size: 11px;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.recommendation-proof p {
+  margin: 5px 0 7px;
+  color: #544817;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.recommendation-proof a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--green-dark);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.recommendation-proof > button {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 11px;
+  border: 1px solid #d26a5a;
+  border-radius: 7px;
+  color: #a72f20;
+  background: #fff;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.recommendation-proof > button.is-saved {
+  color: #fff;
+  border-color: var(--tomato);
+  background: var(--tomato);
+}
+
+.favorite-history {
+  margin-top: 22px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.favorite-heading {
+  display: flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 13px;
+  border-bottom: 1px solid var(--line);
+  background: var(--tomato-soft);
+}
+
+.favorite-heading span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #9b3024;
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.favorite-heading strong {
+  display: inline-flex;
+  min-width: 27px;
+  height: 27px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: #fff;
+  background: var(--tomato);
+  font-size: 12px;
+}
+
+.favorite-history article {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 42px;
+  border-bottom: 1px solid #e8efec;
+}
+
+.favorite-history article:last-child {
+  border-bottom: 0;
+}
+
+.favorite-history article > button:first-child {
+  display: flex;
+  min-width: 0;
+  min-height: 58px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 12px;
+  border: 0;
+  background: transparent;
+  text-align: left;
+}
+
+.favorite-history article > button:first-child > span {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.favorite-history article > button:first-child strong {
+  overflow: hidden;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.favorite-history article > button:first-child span span {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.favorite-history article > button:last-child {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-left: 1px solid var(--line);
+  color: #a13a2c;
+  background: transparent;
+}
+
+.favorite-history > p {
+  margin: 0;
+  padding: 16px 13px;
+  color: var(--muted);
+  font-size: 12px;
 }
 
 .ingredients-section,
@@ -1427,6 +1618,14 @@ p {
 
   .servings-control {
     align-self: center;
+  }
+
+  .recommendation-proof {
+    grid-template-columns: 1fr;
+  }
+
+  .recommendation-proof > button {
+    justify-content: center;
   }
 }
 

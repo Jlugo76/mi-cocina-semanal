@@ -3,7 +3,6 @@
 import {
   Apple,
   ArrowLeft,
-  Bell,
   BookOpen,
   CalendarDays,
   Check,
@@ -13,13 +12,16 @@ import {
   Coffee,
   CookingPot,
   Dumbbell,
+  ExternalLink,
   GlassWater,
+  Heart,
   Minus,
   Moon,
   Plus,
   RotateCcw,
   Scale,
   ShoppingCart,
+  Sparkles,
   Sun,
   Timer,
   Trash2,
@@ -27,9 +29,11 @@ import {
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { allMeals, Meal, MealType, menu } from './data';
+import { getWeeklyRecommendation, SavedRecommendation } from './recommendations';
 
 type View = 'day' | 'week' | 'training' | 'recipes' | 'shopping' | 'guide';
 type CompletionMap = Record<string, number>;
+type RecipeMode = 'original' | 'weekly';
 type ShoppingItem = {
   id: string;
   name: string;
@@ -143,6 +147,9 @@ export default function Home() {
   const [trainingTimes, setTrainingTimes] = useState(defaultTraining);
   const [completed, setCompleted] = useState<CompletionMap>({});
   const [activeMeal, setActiveMeal] = useState<Meal | null>(null);
+  const [recipeMode, setRecipeMode] = useState<RecipeMode>('original');
+  const [savedRecommendations, setSavedRecommendations] = useState<SavedRecommendation[]>([]);
+  const [recommendationPreview, setRecommendationPreview] = useState<SavedRecommendation | null>(null);
   const [servings, setServings] = useState(1);
   const [finishedSteps, setFinishedSteps] = useState<number[]>([]);
   const [shoppingItems, setShoppingItems] = useState<ShoppingItem[]>(defaultShoppingItems);
@@ -154,10 +161,13 @@ export default function Home() {
     try {
       const saved = window.localStorage.getItem(STORAGE_KEY);
       if (saved) {
-        const parsed = JSON.parse(saved) as { trainingTimes?: string[]; completed?: CompletionMap; shoppingItems?: ShoppingItem[] };
+        const parsed = JSON.parse(saved) as { trainingTimes?: string[]; completed?: CompletionMap; shoppingItems?: ShoppingItem[]; savedRecommendations?: SavedRecommendation[] };
+        /* eslint-disable react-hooks/set-state-in-effect -- Restore device-local preferences after hydration. */
         if (Array.isArray(parsed.trainingTimes) && parsed.trainingTimes.length === 7) setTrainingTimes(parsed.trainingTimes);
         if (parsed.completed) setCompleted(parsed.completed);
         if (Array.isArray(parsed.shoppingItems)) setShoppingItems(parsed.shoppingItems);
+        if (Array.isArray(parsed.savedRecommendations)) setSavedRecommendations(parsed.savedRecommendations);
+        /* eslint-enable react-hooks/set-state-in-effect */
       }
     } catch {
       // Local preferences are optional.
@@ -168,12 +178,11 @@ export default function Home() {
 
   useEffect(() => {
     if (!ready) return;
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ trainingTimes, completed, shoppingItems }));
-  }, [completed, ready, shoppingItems, trainingTimes]);
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ trainingTimes, completed, shoppingItems, savedRecommendations }));
+  }, [completed, ready, savedRecommendations, shoppingItems, trainingTimes]);
 
   const selectedMenu = menu[selectedDay];
   const selectedDate = weekDates[selectedDay];
-  const selectedDateKey = isoDate(selectedDate);
 
   function completionKey(meal: Meal, dayIndex = selectedDay) {
     return `${isoDate(weekDates[dayIndex])}:${meal.id}`;
@@ -222,6 +231,19 @@ export default function Home() {
 
   function openMeal(meal: Meal) {
     setActiveMeal(meal);
+    setRecipeMode('original');
+    setRecommendationPreview(null);
+    setServings(1);
+    setFinishedSteps([]);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function openSavedRecommendation(saved: SavedRecommendation) {
+    const meal = allMeals.find((entry) => entry.id === saved.mealId);
+    if (!meal) return;
+    setActiveMeal(meal);
+    setRecipeMode('weekly');
+    setRecommendationPreview(saved);
     setServings(1);
     setFinishedSteps([]);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -264,8 +286,14 @@ export default function Home() {
   }
 
   const weekLabel = new Intl.DateTimeFormat('es-ES', { day: 'numeric', month: 'short' });
+  const weeklyRecommendation = activeMeal ? recommendationPreview ?? getWeeklyRecommendation(activeMeal, selectedDate) : null;
+  const displayedIngredients = recipeMode === 'weekly' && weeklyRecommendation ? weeklyRecommendation.ingredients : activeMeal?.ingredients ?? [];
+  const displayedSteps = recipeMode === 'weekly' && weeklyRecommendation ? weeklyRecommendation.steps : activeMeal?.steps ?? [];
+  const displayedTitle = recipeMode === 'weekly' && weeklyRecommendation ? weeklyRecommendation.title : activeMeal?.title ?? '';
+  const recommendationSaved = weeklyRecommendation ? savedRecommendations.some((saved) => saved.id === weeklyRecommendation.id) : false;
+  const dayRecommendations = savedRecommendations.filter((saved) => saved.day === selectedMenu.day);
   const totalRecipeWeight = activeMeal
-    ? activeMeal.ingredients.reduce((sum, item) => sum + item.grams, 0) * servings
+    ? displayedIngredients.reduce((sum, item) => sum + item.grams, 0) * servings
     : 0;
   const checkedShoppingItems = shoppingItems.filter((item) => item.checked).length;
   const shoppingProgress = shoppingItems.length ? Math.round((checkedShoppingItems / shoppingItems.length) * 100) : 0;
@@ -279,7 +307,6 @@ export default function Home() {
             <strong>Mi cocina</strong>
             <span>{weekLabel.format(weekDates[0])} - {weekLabel.format(weekDates[6])}</span>
           </div>
-          <button className="icon-button" type="button" aria-label="Avisos"><Bell size={19} /></button>
         </header>
 
         <nav className="week-strip" aria-label="Días de la semana">
@@ -306,7 +333,7 @@ export default function Home() {
                 </button>
                 <div>
                   <span>{activeMeal.label}</span>
-                  <h1>{activeMeal.title}</h1>
+                  <h1>{displayedTitle}</h1>
                 </div>
               </header>
 
@@ -315,9 +342,47 @@ export default function Home() {
                 <div className="recipe-hero-copy">
                   <span className="reference-tag">Imagen de referencia</span>
                   <span className="recipe-hero-icon"><MealGlyph type={activeMeal.type} /></span>
-                  <strong>{activeMeal.title}</strong>
+                  <strong>{displayedTitle}</strong>
                 </div>
               </div>
+
+              <div className="recipe-switch" role="group" aria-label="Versión de la receta">
+                <button type="button" aria-pressed={recipeMode === 'original'} onClick={() => { setRecipeMode('original'); setRecommendationPreview(null); setFinishedSteps([]); }}>
+                  <BookOpen size={17} /> Receta inicial
+                </button>
+                <button type="button" aria-pressed={recipeMode === 'weekly'} onClick={() => { setRecipeMode('weekly'); setFinishedSteps([]); }}>
+                  <Sparkles size={17} /> Recomendación semanal
+                </button>
+              </div>
+
+              {recipeMode === 'weekly' && weeklyRecommendation ? (
+                <section className="recommendation-proof">
+                  <div>
+                    <span>Receta real verificada · semana {weeklyRecommendation.weekKey.slice(-2)}</span>
+                    <p>{weeklyRecommendation.note}</p>
+                    <a href={weeklyRecommendation.sourceUrl} target="_blank" rel="noreferrer">
+                      {weeklyRecommendation.sourceTitle} <ExternalLink size={15} />
+                    </a>
+                  </div>
+                  <button
+                    type="button"
+                    className={recommendationSaved ? 'is-saved' : ''}
+                    aria-pressed={recommendationSaved}
+                    onClick={() => {
+                      if (recommendationSaved) return;
+                      setSavedRecommendations((current) => [...current, {
+                        ...weeklyRecommendation,
+                        day: selectedMenu.day,
+                        mealLabel: activeMeal.label,
+                        savedAt: new Date().toISOString(),
+                      }]);
+                    }}
+                  >
+                    <Heart size={18} fill={recommendationSaved ? 'currentColor' : 'none'} />
+                    {recommendationSaved ? 'Guardada' : 'Me gusta'}
+                  </button>
+                </section>
+              ) : null}
 
               <div className="recipe-meta">
                 <span><Scale size={18} /> {totalRecipeWeight} g</span>
@@ -332,7 +397,7 @@ export default function Home() {
               <section className="ingredients-section">
                 <h2>Prepara esto</h2>
                 <ul className="ingredient-list">
-                  {activeMeal.ingredients.map((item) => (
+                  {displayedIngredients.map((item) => (
                     <li key={item.name}>
                       <span>{item.name}</span>
                       <strong>{item.grams * servings} g</strong>
@@ -344,7 +409,7 @@ export default function Home() {
               <section className="steps-section">
                 <h2>Paso a paso</h2>
                 <div className="steps-list">
-                  {activeMeal.steps.map((item, index) => {
+                  {displayedSteps.map((item, index) => {
                     const finished = finishedSteps.includes(index);
                     return (
                       <button
@@ -414,6 +479,24 @@ export default function Home() {
                   );
                 })}
               </div>
+
+              <section className="favorite-history" aria-label={`Recetas guardadas del ${dayNames[selectedDay]}`}>
+                <div className="favorite-heading">
+                  <span><Heart size={18} /> Tus favoritas de este día</span>
+                  <strong>{dayRecommendations.length}</strong>
+                </div>
+                {dayRecommendations.length ? dayRecommendations.map((saved) => (
+                  <article key={saved.id}>
+                    <button type="button" onClick={() => openSavedRecommendation(saved)}>
+                      <span><strong>{saved.title}</strong><span>{saved.mealLabel} · semana {saved.weekKey.slice(-2)}</span></span>
+                      <ChevronRight size={18} />
+                    </button>
+                    <button type="button" aria-label={`Eliminar ${saved.title} de favoritas`} onClick={() => setSavedRecommendations((current) => current.filter((entry) => entry.id !== saved.id))}>
+                      <Trash2 size={17} />
+                    </button>
+                  </article>
+                )) : <p>Cuando marques “Me gusta”, la receta aparecerá aquí.</p>}
+              </section>
             </section>
           ) : view === 'week' ? (
             <section className="week-view">
