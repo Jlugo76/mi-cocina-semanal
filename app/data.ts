@@ -10,12 +10,15 @@ export type RecipeStep = {
   detail: string;
 };
 
+export type TimingRule = 'pre-workout-2h' | 'post-workout' | 'pre-or-post-workout';
+
 export type Meal = {
   id: string;
   type: MealType;
   label: string;
   title: string;
   baseTime: string;
+  timingRule?: TimingRule;
   ingredients: Ingredient[];
   steps: RecipeStep[];
 };
@@ -51,7 +54,7 @@ export const menu: MenuDay[] = [
         steps: [step('Corta las verduras', 'Pica la cebolla, la zanahoria y los pimientos.'), step('Cocina la boloñesa', 'Saltea las verduras, incorpora el pollo y añade el tomate.'), step('Cuece y mezcla', 'Cuece los macarrones, escúrrelos y mézclalos con la salsa.'), step('Sirve', 'Pesa la ración y acompaña con la manzana.')],
       },
       {
-        id: 'd1-afternoon', type: 'afternoon', label: 'Merienda', baseTime: '17:30',
+        id: 'd1-afternoon', type: 'afternoon', label: 'Merienda', baseTime: '17:30', timingRule: 'pre-or-post-workout',
         title: 'Yogur recovery y tostada de pavo',
         ingredients: [ingredient('Yogur skyr', 150), ingredient('Leche desnatada', 150), ingredient('Copos de maíz', 40), ingredient('Canela', 2), ingredient('Pan', 50), ingredient('Jamón cocido o pavo', 40), ingredient('Aceite de oliva', 5)],
         steps: [step('Monta el yogur', 'Mezcla el yogur, la leche, los copos y la canela.'), step('Prepara la tostada', 'Tuesta el pan y añade el pavo.'), step('Termina', 'Añade el aceite sobre la tostada y sirve.')],
@@ -220,13 +223,13 @@ export const menu: MenuDay[] = [
     day: 6,
     meals: [
       {
-        id: 'd6-breakfast', type: 'breakfast', label: 'Desayuno', baseTime: '08:00',
+        id: 'd6-breakfast', type: 'breakfast', label: 'Desayuno', baseTime: '08:00', timingRule: 'pre-workout-2h',
         title: 'Tostada de pavo, leche, maíz y naranja',
         ingredients: [ingredient('Pan', 40), ingredient('Jamón cocido o pavo', 40), ingredient('Aceite de oliva', 5), ingredient('Leche desnatada', 250), ingredient('Copos de maíz', 30), ingredient('Naranja', 225)],
         steps: [step('Prepara la tostada', 'Tuesta el pan, añade el pavo y el aceite.'), step('Sirve los cereales', 'Añade la leche a los copos de maíz.'), step('Prepara la naranja', 'Pela la naranja y sirve todo junto.')],
       },
       {
-        id: 'd6-snack', type: 'snack', label: 'Media mañana', baseTime: '11:30',
+        id: 'd6-snack', type: 'snack', label: 'Media mañana', baseTime: '11:30', timingRule: 'post-workout',
         title: 'Batido de frutas y cacahuete',
         ingredients: [ingredient('Leche desnatada', 250), ingredient('Proteína de suero', 10), ingredient('Fresas', 80), ingredient('Mango', 80), ingredient('Manzana', 145), ingredient('Cacahuete en polvo', 25), ingredient('Miel', 10)],
         steps: [step('Prepara la fruta', 'Lava y corta las fresas, el mango y la manzana.'), step('Tritura', 'Añade la leche, la proteína, el cacahuete y la miel y bate.'), step('Sirve', 'Tómalo después del entrenamiento.')],

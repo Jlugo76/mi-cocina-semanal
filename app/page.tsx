@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  AlertTriangle,
   Apple,
   ArrowLeft,
   BookOpen,
@@ -30,6 +31,7 @@ import {
 import { useEffect, useMemo, useState } from 'react';
 import { allMeals, Meal, MealType, menu } from './data';
 import { getWeeklyRecommendation, SavedRecommendation } from './recommendations';
+import { buildSchedule, toMinutes, toTime } from './schedule';
 
 type View = 'day' | 'week' | 'training' | 'recipes' | 'shopping' | 'guide';
 type CompletionMap = Record<string, number>;
@@ -71,16 +73,6 @@ function createWeeklyShoppingList(): ShoppingItem[] {
 }
 
 const defaultShoppingItems = createWeeklyShoppingList();
-
-function toMinutes(value: string) {
-  const [hours, minutes] = value.split(':').map(Number);
-  return hours * 60 + minutes;
-}
-
-function toTime(value: number) {
-  const minutes = ((value % 1440) + 1440) % 1440;
-  return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
-}
 
 function isoDate(date: Date) {
   const year = date.getFullYear();
@@ -189,26 +181,19 @@ export default function Home() {
   }
 
   function scheduleFor(dayIndex: number) {
-    const dayMenu = menu[dayIndex];
-    const training = toMinutes(trainingTimes[dayIndex]);
-    let adjustment = 0;
-
-    return dayMenu.meals.map((meal) => {
-      let suggested = toMinutes(meal.baseTime) + adjustment;
-      if (meal.type === 'afternoon') suggested = training - 120;
-      if (meal.type === 'dinner') suggested = training + 120;
-      if (meal.type === 'late') suggested = Math.max(suggested, training + 180);
-
-      const actual = completed[completionKey(meal, dayIndex)];
-      if (typeof actual === 'number' && meal.type !== 'afternoon' && meal.type !== 'dinner' && meal.type !== 'late') {
-        adjustment = Math.max(-60, Math.min(120, actual - suggested));
-      }
-      return { ...meal, suggested, actual };
-    });
+    return buildSchedule(
+      menu[dayIndex].meals,
+      trainingTimes[dayIndex],
+      (meal) => completed[completionKey(meal, dayIndex)],
+    );
   }
 
   const scheduledMeals = scheduleFor(selectedDay);
   const nextMeal = scheduledMeals.find((meal) => typeof meal.actual !== 'number');
+  const workoutRelated = scheduledMeals.filter((meal) => meal.timingRuleApplied || meal.type === 'afternoon' || meal.type === 'dinner');
+  const afternoonMeal = scheduledMeals.find((meal) => meal.type === 'afternoon');
+  const preWorkoutMeal = scheduledMeals.find((meal) => meal.timingRule === 'pre-workout-2h' && meal.timingRuleApplied);
+  const postWorkoutMeal = scheduledMeals.find((meal) => meal.timingRule === 'post-workout' && meal.timingRuleApplied);
 
   function toggleMeal(meal: Meal, suggested: number) {
     const key = completionKey(meal);
@@ -434,13 +419,31 @@ export default function Home() {
                   <span>{dayNames[selectedDay]}, {selectedDate.getDate()}</span>
                   <h1>{selectedDay === todayIndex ? 'Hoy' : `Día ${selectedMenu.day}`}</h1>
                 </div>
-                <span>Día {selectedMenu.day} del menú</span>
+                <span>Día {selectedMenu.day} del menú{selectedMenu.meals.some((meal) => meal.type === 'late') ? ' · Con resopón' : ''}</span>
               </div>
 
               <TrainingCard
                 time={trainingTimes[selectedDay]}
                 onChange={changeTraining}
+                related={workoutRelated.map((meal) => ({ label: meal.label, time: toTime(meal.suggested) }))}
               />
+
+              <div className="workout-alert" role="note" aria-label="Recomendación de comida según el entreno">
+                <AlertTriangle size={22} />
+                {preWorkoutMeal && postWorkoutMeal ? (
+                  <div>
+                    <span>Pauta especial del día 6</span>
+                    <strong>{preWorkoutMeal.label} a las {toTime(preWorkoutMeal.suggested)}</strong>
+                    <p>Entreno a las {trainingTimes[selectedDay]} y {postWorkoutMeal.label.toLocaleLowerCase('es-ES')} después, a las {toTime(postWorkoutMeal.suggested)}.</p>
+                  </div>
+                ) : afternoonMeal ? (
+                  <div>
+                    <span>Atención antes de entrenar</span>
+                    <strong>Merienda recomendada: {toTime(afternoonMeal.suggested)}</strong>
+                    <p>Hora de entreno: {trainingTimes[selectedDay]}. {afternoonMeal.shiftedByCompletion ? 'La hora se ha recalculado porque una comida anterior se marcó más tarde.' : 'La recomendación se ajusta automáticamente al cambiar el entreno.'}</p>
+                  </div>
+                ) : null}
+              </div>
 
               <div className="next-card" aria-live="polite">
                 <Clock3 size={19} />
@@ -470,7 +473,7 @@ export default function Home() {
                           <span><MealGlyph type={meal.type} /></span>
                         </span>
                         <span className="meal-copy">
-                          <span><strong>{meal.label}</strong> {done ? `Hecho ${toTime(meal.actual as number)}` : `aprox. ${toTime(meal.suggested)}`}</span>
+                          <span><strong>{meal.label}</strong> {done ? `Hecho ${toTime(meal.actual as number)}` : `${meal.shiftedByCompletion ? 'recalculado' : 'aprox.'} ${toTime(meal.suggested)}`}</span>
                           <span>{meal.title}</span>
                         </span>
                         <ChevronRight size={18} aria-hidden="true" />
@@ -530,11 +533,29 @@ export default function Home() {
                 <span>{dayNames[selectedDay]} · Día {selectedMenu.day}</span>
                 <h1>Entrenamiento</h1>
               </div>
-              <TrainingCard time={trainingTimes[selectedDay]} onChange={changeTraining} large />
+              <TrainingCard
+                time={trainingTimes[selectedDay]}
+                onChange={changeTraining}
+                related={workoutRelated.map((meal) => ({ label: meal.label, time: toTime(meal.suggested) }))}
+                large
+              />
               <div className="training-timeline">
-                <TimelineItem icon={<GlassWater size={20} />} label="Merienda" time={toTime(toMinutes(trainingTimes[selectedDay]) - 120)} detail="Dos horas antes de salir" />
+                {scheduledMeals.filter((meal) => meal.timingRule === 'pre-workout-2h' && meal.timingRuleApplied).map((meal) => (
+                  <TimelineItem key={meal.id} icon={<Coffee size={20} />} label={meal.label} time={toTime(meal.suggested)} detail="Dos horas antes de salir" />
+                ))}
+                {scheduledMeals.filter((meal) => meal.type === 'afternoon' && meal.suggested <= toMinutes(trainingTimes[selectedDay])).map((meal) => (
+                  <TimelineItem key={meal.id} icon={<GlassWater size={20} />} label={meal.label} time={toTime(meal.suggested)} detail="Antes de entrenar" />
+                ))}
                 <TimelineItem icon={<Dumbbell size={20} />} label="Entreno" time={trainingTimes[selectedDay]} detail="Hora de salida" active />
-                <TimelineItem icon={<CookingPot size={20} />} label="Cena" time={toTime(toMinutes(trainingTimes[selectedDay]) + 120)} detail="Al volver a casa" />
+                {scheduledMeals.filter((meal) => meal.timingRule === 'post-workout' && meal.timingRuleApplied).map((meal) => (
+                  <TimelineItem key={meal.id} icon={<GlassWater size={20} />} label={meal.label} time={toTime(meal.suggested)} detail="Después de entrenar" />
+                ))}
+                {scheduledMeals.filter((meal) => meal.type === 'dinner').map((meal) => (
+                  <TimelineItem key={meal.id} icon={<CookingPot size={20} />} label={meal.label} time={toTime(meal.suggested)} detail="Después del entreno, nunca antes de la pauta base" />
+                ))}
+                {scheduledMeals.filter((meal) => meal.type === 'late').map((meal) => (
+                  <TimelineItem key={meal.id} icon={<Moon size={20} />} label={meal.label} time={toTime(meal.suggested)} detail="Solo los días 3, 5 y 7" />
+                ))}
               </div>
             </section>
           ) : view === 'recipes' ? (
@@ -658,6 +679,7 @@ export default function Home() {
               <GuideItem title="Fruta" text="Puedes cambiar una pieza mediana por dos mandarinas, dos kiwis, ocho fresas, doce uvas o 250 g de sandía o melón." />
               <GuideItem title="Verduras y aceite" text="Las verduras son libres salvo indicación. Usa aproximadamente 10 g de aceite en ensaladas y 5 g en preparaciones a la plancha." />
               <GuideItem title="Hidratación" text="Toma un vaso grande de agua al levantarte y llega bien hidratado al entrenamiento." />
+              <GuideItem title="Resopón" text="La planificación incluye resopón únicamente los días 3, 5 y 7. El portal lo coloca después de la cena y no lo añade en los demás días porque el PDF no lo prescribe." />
               <GuideItem title="Suplementación" text="El documento indica 8 g diarios de creatina. Mantén siempre la pauta acordada con tu profesional y consulta cualquier cambio." />
             </section>
           )}
@@ -676,7 +698,7 @@ export default function Home() {
   );
 }
 
-function TrainingCard({ time, onChange, large = false }: { time: string; onChange: (value: string) => void; large?: boolean }) {
+function TrainingCard({ time, onChange, related, large = false }: { time: string; onChange: (value: string) => void; related: { label: string; time: string }[]; large?: boolean }) {
   return (
     <section className={`training-card ${large ? 'is-large' : ''}`} aria-label="Horario de entrenamiento">
       <span className="training-icon"><Dumbbell size={21} /></span>
@@ -686,8 +708,7 @@ function TrainingCard({ time, onChange, large = false }: { time: string; onChang
       </label>
       <input id={large ? 'training-time-large' : 'training-time'} type="time" value={time} onChange={(event) => onChange(event.target.value)} />
       <div className="training-related" aria-live="polite">
-        <span>Merienda <strong>{toTime(toMinutes(time) - 120)}</strong></span>
-        <span>Cena <strong>{toTime(toMinutes(time) + 120)}</strong></span>
+        {related.map((item) => <span key={item.label}>{item.label} <strong>{item.time}</strong></span>)}
       </div>
     </section>
   );
