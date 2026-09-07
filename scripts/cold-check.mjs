@@ -1,15 +1,22 @@
 import assert from 'node:assert/strict';
 import { allMeals, menu } from '../app/data.ts';
-import { getIsoWeekKey, getWeeklyRecommendation } from '../app/recommendations.ts';
+import { getIsoWeekKey, getWeeklyRecommendation, weeklyAudit } from '../app/recommendations.ts';
 import { buildSchedule, toMinutes, toTime } from '../app/schedule.ts';
 
 assert.equal(menu.length, 7, 'El menú debe contener siete días');
 assert.ok(allMeals.length > 0, 'El menú no puede estar vacío');
 assert.equal(new Set(allMeals.map((meal) => meal.id)).size, allMeals.length, 'Los identificadores de comida deben ser únicos');
 
-const dates = [new Date('2026-08-30T12:00:00Z'), new Date('2026-08-31T12:00:00Z')];
-assert.equal(getIsoWeekKey(dates[0]), '2026-W35');
-assert.equal(getIsoWeekKey(dates[1]), '2026-W36');
+const dates = [new Date('2026-09-06T12:00:00Z'), new Date('2026-09-07T12:00:00Z')];
+assert.equal(getIsoWeekKey(dates[0]), '2026-W36');
+assert.equal(getIsoWeekKey(dates[1]), '2026-W37');
+assert.equal(weeklyAudit.weekKey, '2026-W37');
+assert.equal(weeklyAudit.reviewedOn, '2026-09-07');
+assert.equal(weeklyAudit.mealsReviewed, allMeals.length, 'La revisión semanal debe cubrir todas las comidas');
+assert.equal(weeklyAudit.retainedRecommendations, allMeals.length, 'Las comidas sin alternativa compatible deben conservar su recomendación');
+assert.equal(weeklyAudit.newRecommendations, 0, 'No se deben publicar recomendaciones incompatibles');
+assert.equal(weeklyAudit.sourcesReviewed, 18, 'La revisión semanal debe conservar el inventario de fuentes');
+assert.ok(weeklyAudit.unavailableSourceUrls.includes('https://cdn.recetasderechupete.com/wp-content/uploads/2013/05/recetas-cocina-italiana-web.pdf'));
 assert.equal(toMinutes('21:30'), 1290);
 assert.equal(toTime(1470), '00:30');
 
@@ -45,7 +52,8 @@ for (const [dayIndex, day] of menu.entries()) {
 
     const recommendation = getWeeklyRecommendation(meal, dates[1]);
     assert.equal(recommendation.mealId, meal.id);
-    assert.equal(recommendation.weekKey, '2026-W36');
+    assert.equal(recommendation.weekKey, weeklyAudit.retainedWeekKey);
+    assert.match(recommendation.note, /No se publicó una alternativa nueva/);
     assert.ok(recommendation.title.trim(), `${meal.id} necesita un título semanal`);
     assert.ok(recommendation.sourceTitle.trim(), `${meal.id} necesita una fuente identificada`);
     assert.match(recommendation.sourceUrl, /^https:\/\//, `${meal.id} necesita una fuente HTTPS`);

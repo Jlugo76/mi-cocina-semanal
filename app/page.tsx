@@ -343,7 +343,7 @@ export default function Home() {
               {recipeMode === 'weekly' && weeklyRecommendation ? (
                 <section className="recommendation-proof">
                   <div>
-                    <span>Receta real verificada · semana {weeklyRecommendation.weekKey.slice(-2)}</span>
+                    <span>Última receta verificada · semana {weeklyRecommendation.weekKey.slice(-2)}</span>
                     <p>{weeklyRecommendation.note}</p>
                     <a href={weeklyRecommendation.sourceUrl} target="_blank" rel="noreferrer">
                       {weeklyRecommendation.sourceTitle} <ExternalLink size={15} />

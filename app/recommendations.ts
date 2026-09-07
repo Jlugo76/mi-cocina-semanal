@@ -26,6 +26,18 @@ type VerifiedTechnique = {
   steps: RecipeStep[];
 };
 
+export type WeeklyAudit = {
+  weekKey: string;
+  reviewedOn: string;
+  retainedWeekKey: string;
+  mealsReviewed: number;
+  sourcesReviewed: number;
+  newRecommendations: number;
+  retainedRecommendations: number;
+  unavailableSourceUrls: string[];
+  reason: string;
+};
+
 const techniques = {
   yogurtBowl: {
     title: 'Healthy bowl',
@@ -209,6 +221,20 @@ const techniques = {
   },
 } satisfies Record<string, VerifiedTechnique>;
 
+const LAST_VALID_WEEK_KEY = '2026-W36';
+
+export const weeklyAudit: WeeklyAudit = {
+  weekKey: '2026-W37',
+  reviewedOn: '2026-09-07',
+  retainedWeekKey: LAST_VALID_WEEK_KEY,
+  mealsReviewed: 38,
+  sourcesReviewed: Object.keys(techniques).length,
+  newRecommendations: 0,
+  retainedRecommendations: 38,
+  unavailableSourceUrls: [techniques.pasta.sourceUrl],
+  reason: 'No se publicó una alternativa nueva: las recetas revisadas añadían ingredientes ajenos a la pauta o no conservaban sus proporciones. Se mantiene la última recomendación válida.',
+};
+
 function selectTechnique(meal: Meal): VerifiedTechnique {
   const title = meal.title.toLocaleLowerCase('es-ES');
   if (/arepa/.test(title)) return techniques.arepas;
@@ -242,13 +268,17 @@ export function getIsoWeekKey(date: Date) {
 
 export function getWeeklyRecommendation(meal: Meal, date: Date): WeeklyRecommendation {
   const technique = selectTechnique(meal);
-  const weekKey = getIsoWeekKey(date);
+  const requestedWeekKey = getIsoWeekKey(date);
+  const weekKey = requestedWeekKey > LAST_VALID_WEEK_KEY ? LAST_VALID_WEEK_KEY : requestedWeekKey;
+  const note = requestedWeekKey === weeklyAudit.weekKey
+    ? `Revisión ${weeklyAudit.weekKey.slice(-2)} · ${weeklyAudit.reviewedOn}: ${weeklyAudit.reason}`
+    : 'Técnica adaptada de una receta publicada. Se conservan exactamente los ingredientes y gramos de tu planificación; no se añaden los extras de la fuente.';
   return {
     id: `${meal.id}:${weekKey}:${technique.title.toLocaleLowerCase('es-ES').replace(/[^a-z0-9]+/g, '-')}`,
     mealId: meal.id,
     weekKey,
     title: technique.title,
-    note: 'Técnica adaptada de una receta publicada. Se conservan exactamente los ingredientes y gramos de tu planificación; no se añaden los extras de la fuente.',
+    note,
     sourceTitle: technique.sourceTitle,
     sourceUrl: technique.sourceUrl,
     verifiedOn: '2026-08-30',
