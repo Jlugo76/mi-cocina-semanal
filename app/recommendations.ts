@@ -224,15 +224,15 @@ const techniques = {
 const LAST_VALID_WEEK_KEY = '2026-W36';
 
 export const weeklyAudit: WeeklyAudit = {
-  weekKey: '2026-W37',
-  reviewedOn: '2026-09-07',
+  weekKey: '2026-W38',
+  reviewedOn: '2026-09-14',
   retainedWeekKey: LAST_VALID_WEEK_KEY,
   mealsReviewed: 38,
-  sourcesReviewed: Object.keys(techniques).length,
+  sourcesReviewed: 22,
   newRecommendations: 0,
   retainedRecommendations: 38,
   unavailableSourceUrls: [techniques.pasta.sourceUrl],
-  reason: 'No se publicó una alternativa nueva: las recetas revisadas añadían ingredientes ajenos a la pauta o no conservaban sus proporciones. Se mantiene la última recomendación válida.',
+  reason: 'No se publicó una alternativa nueva: las recetas revisadas añadían ingredientes ajenos a la pauta, cambiaban ingredientes o no permitían conservar sus proporciones. Se mantiene la última recomendación válida.',
 };
 
 function selectTechnique(meal: Meal): VerifiedTechnique {
@@ -270,7 +270,7 @@ export function getWeeklyRecommendation(meal: Meal, date: Date): WeeklyRecommend
   const technique = selectTechnique(meal);
   const requestedWeekKey = getIsoWeekKey(date);
   const weekKey = requestedWeekKey > LAST_VALID_WEEK_KEY ? LAST_VALID_WEEK_KEY : requestedWeekKey;
-  const note = requestedWeekKey === weeklyAudit.weekKey
+  const note = requestedWeekKey >= weeklyAudit.weekKey
     ? `Revisión ${weeklyAudit.weekKey.slice(-2)} · ${weeklyAudit.reviewedOn}: ${weeklyAudit.reason}`
     : 'Técnica adaptada de una receta publicada. Se conservan exactamente los ingredientes y gramos de tu planificación; no se añaden los extras de la fuente.';
   return {
