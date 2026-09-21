@@ -224,15 +224,15 @@ const techniques = {
 const LAST_VALID_WEEK_KEY = '2026-W36';
 
 export const weeklyAudit: WeeklyAudit = {
-  weekKey: '2026-W38',
-  reviewedOn: '2026-09-14',
+  weekKey: '2026-W39',
+  reviewedOn: '2026-09-21',
   retainedWeekKey: LAST_VALID_WEEK_KEY,
   mealsReviewed: 38,
-  sourcesReviewed: 22,
+  sourcesReviewed: 36,
   newRecommendations: 0,
   retainedRecommendations: 38,
   unavailableSourceUrls: [techniques.pasta.sourceUrl],
-  reason: 'No se publicó una alternativa nueva: las recetas revisadas añadían ingredientes ajenos a la pauta, cambiaban ingredientes o no permitían conservar sus proporciones. Se mantiene la última recomendación válida.',
+  reason: 'No se publicó una alternativa nueva: las recetas revisadas añadían ingredientes ajenos a la pauta, omitían componentes de la comida o no permitían conservar sus proporciones. Se mantiene la última recomendación válida.',
 };
 
 function selectTechnique(meal: Meal): VerifiedTechnique {

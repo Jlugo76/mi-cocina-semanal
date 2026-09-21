@@ -7,11 +7,11 @@ assert.equal(menu.length, 7, 'El menú debe contener siete días');
 assert.ok(allMeals.length > 0, 'El menú no puede estar vacío');
 assert.equal(new Set(allMeals.map((meal) => meal.id)).size, allMeals.length, 'Los identificadores de comida deben ser únicos');
 
-const dates = [new Date('2026-09-13T12:00:00Z'), new Date('2026-09-14T12:00:00Z')];
-assert.equal(getIsoWeekKey(dates[0]), '2026-W37');
-assert.equal(getIsoWeekKey(dates[1]), '2026-W38');
-assert.equal(weeklyAudit.weekKey, '2026-W38');
-assert.equal(weeklyAudit.reviewedOn, '2026-09-14');
+const dates = [new Date('2026-09-20T12:00:00Z'), new Date('2026-09-21T12:00:00Z')];
+assert.equal(getIsoWeekKey(dates[0]), '2026-W38');
+assert.equal(getIsoWeekKey(dates[1]), '2026-W39');
+assert.equal(weeklyAudit.weekKey, '2026-W39');
+assert.equal(weeklyAudit.reviewedOn, '2026-09-21');
 assert.equal(weeklyAudit.mealsReviewed, allMeals.length, 'La revisión semanal debe cubrir todas las comidas');
 assert.equal(weeklyAudit.retainedRecommendations, allMeals.length, 'Las comidas sin alternativa compatible deben conservar su recomendación');
 assert.equal(weeklyAudit.newRecommendations, 0, 'No se deben publicar recomendaciones incompatibles');
