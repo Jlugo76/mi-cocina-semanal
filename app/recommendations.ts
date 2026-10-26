@@ -224,11 +224,11 @@ const techniques = {
 const LAST_VALID_WEEK_KEY = '2026-W36';
 
 export const weeklyAudit: WeeklyAudit = {
-  weekKey: '2026-W43',
-  reviewedOn: '2026-10-20',
+  weekKey: '2026-W44',
+  reviewedOn: '2026-10-26',
   retainedWeekKey: LAST_VALID_WEEK_KEY,
   mealsReviewed: 38,
-  sourcesReviewed: 56,
+  sourcesReviewed: 133,
   newRecommendations: 0,
   retainedRecommendations: 38,
   unavailableSourceUrls: [techniques.pasta.sourceUrl],
